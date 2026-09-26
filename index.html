@@ -77,6 +77,9 @@
   .search-card input:focus { border-color:#38b9c9; }
   .search-card input::placeholder { color:#aaa; }
 
+  .ws-select { width:100%; padding:14px 20px; border-radius:50px; border:3px solid #ddd; font-size:15px; color:#14395d; outline:none; background:white; transition:border-color .25s; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9'><path d='M1 1l6 6 6-6' stroke='%2338b9c9' stroke-width='2' fill='none'/></svg>"); background-repeat:no-repeat; background-position:right 22px center; padding-right:44px; }
+  .ws-select:focus { border-color:#38b9c9; }
+
   .btn-primary { background:linear-gradient(45deg,#14395d,#38b9c9); color:white; border:none; padding:16px 30px; border-radius:50px; font-weight:700; font-size:1rem; cursor:pointer; display:inline-flex; align-items:center; gap:9px; transition:opacity .2s, transform .15s; }
   .btn-primary:hover { opacity:.88; transform:translateY(-2px); }
   .btn-primary:active { transform:translateY(0); }
@@ -214,6 +217,37 @@
         </div>
       </div>
 
+      <!-- Business Structure & Registration -->
+      <div class="card">
+        <div class="card-header"><i class="fas fa-sitemap"></i> Business Structure &amp; Registration</div>
+        <div class="card-body">
+          <p style="color:#666; font-size:.85rem; margin-bottom:14px;">Mark the legal structure and, if you have it, a filing/registration number — this feeds into the report below.</p>
+          <div class="tech-input-row">
+            <div class="field-group">
+              <label for="entityType"><i class="fas fa-building-columns" style="color:#38b9c9;margin-right:6px;"></i>Business Entity Type</label>
+              <select id="entityType" class="ws-select">
+                <option value="">Unknown / Not Yet Confirmed</option>
+                <option value="Sole Proprietorship">Sole Proprietorship</option>
+                <option value="Partnership">Partnership</option>
+                <option value="LLC">LLC</option>
+                <option value="S-Corporation">S-Corporation</option>
+                <option value="C-Corporation">C-Corporation</option>
+                <option value="Nonprofit / 501(c)(3)">Nonprofit / 501(c)(3)</option>
+                <option value="Franchise">Franchise</option>
+                <option value="DBA (Doing Business As)">DBA (Doing Business As)</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="entityRegNumber"><i class="fas fa-hashtag" style="color:#38b9c9;margin-right:6px;"></i>Registration / Filing Number (optional)</label>
+              <input type="text" id="entityRegNumber" placeholder="e.g. LLC or corporation filing number">
+            </div>
+          </div>
+          <button class="btn-secondary" onclick="buildEntityLink()"><i class="fas fa-magnifying-glass"></i> Search State Business Registry</button>
+          <div class="util-result" id="entityLinkResult"></div>
+        </div>
+      </div>
+
       <!-- Quick Verification Links -->
       <div class="card">
         <div class="card-header"><i class="fas fa-link"></i> Quick Verification Links</div>
@@ -240,6 +274,56 @@
           <div id="flagArea" style="display:none;">
             <p style="color:#14395d; font-weight:700; margin:16px 0 8px;">Quality Control Flags</p>
             <ul class="flag-list" id="flagList"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Professional License Verification -->
+      <div class="card">
+        <div class="card-header"><i class="fas fa-id-badge"></i> Professional License Verification</div>
+        <div class="card-body">
+          <p style="color:#666; font-size:.85rem; margin-bottom:14px;">Pick the profession — we'll build a pre-filled search to the right state licensing board. Leave it on "Not Applicable" for businesses that don't require a license (this doesn't have a public API either, so you'll still confirm it yourself on the board's site).</p>
+
+          <div class="tech-input-row">
+            <div class="field-group">
+              <label for="licenseProfession"><i class="fas fa-user-tie" style="color:#38b9c9;margin-right:6px;"></i>Profession / Industry</label>
+              <select id="licenseProfession" class="ws-select">
+                <option value="">Not Applicable / No License Required</option>
+                <option value="doctor">Doctor / Physician</option>
+                <option value="dentist">Dentist</option>
+                <option value="attorney">Attorney / Lawyer</option>
+                <option value="realestate_agent">Real Estate Agent</option>
+                <option value="realestate_broker">Real Estate Broker</option>
+                <option value="insurance">Insurance Agent / Broker</option>
+                <option value="electrician">Electrician</option>
+                <option value="plumber">Plumber</option>
+                <option value="hvac">HVAC Technician</option>
+                <option value="contractor">General Contractor</option>
+                <option value="cosmetologist">Hairdresser / Cosmetologist</option>
+                <option value="other">Other Licensed Profession</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="licenseHolderName"><i class="fas fa-signature" style="color:#38b9c9;margin-right:6px;"></i>License Holder Name</label>
+              <input type="text" id="licenseHolderName" placeholder="Owner/practitioner name (defaults to business name)">
+            </div>
+          </div>
+
+          <button class="btn-primary" onclick="buildLicenseLinks()"><i class="fas fa-magnifying-glass"></i> Find License Verification Links</button>
+
+          <div id="licenseLinkArea" style="display:none; margin-top:18px;">
+            <div class="link-grid" id="licenseLinkGrid"></div>
+          </div>
+
+          <div style="margin-top:20px;">
+            <label for="licenseStatus"><i class="fas fa-clipboard-check" style="color:#38b9c9;margin-right:6px;"></i>License Status (mark after you check the board's site)</label>
+            <select id="licenseStatus" class="ws-select" style="max-width:340px;" onchange="updateLicenseBadge()">
+              <option value="not_checked">Not Checked Yet</option>
+              <option value="active">Verified — Active / In Good Standing</option>
+              <option value="inactive">Verified — Inactive, Expired, or Disciplined</option>
+              <option value="na">Not Applicable to This Business</option>
+            </select>
+            <div id="licenseStatusBadge" style="margin-top:10px;"></div>
           </div>
         </div>
       </div>
@@ -592,6 +676,112 @@
     loading.classList.remove('show');
   }
 
+  // ===================== BUSINESS ENTITY TYPE =====================
+  function buildEntityLink() {
+    const state = document.getElementById('bizLocation').value.trim();
+    const name = document.getElementById('bizName').value.trim();
+    const resultDiv = document.getElementById('entityLinkResult');
+    if (!name) { document.getElementById('bizName').focus(); return; }
+    const q = encodeURIComponent(`${state} secretary of state business entity search ${name}`.trim());
+    const url = `https://www.google.com/search?q=${q}`;
+    resultDiv.classList.add('show');
+    resultDiv.innerHTML = `<div style="word-break:break-all;">${url}</div>
+      <div style="margin-top:10px;"><a class="btn-secondary" href="${url}" target="_blank" rel="noopener" style="text-decoration:none;"><i class="fas fa-arrow-up-right-from-square"></i> Open Results</a></div>`;
+  }
+
+  // ===================== PROFESSIONAL LICENSE VERIFICATION =====================
+  // Not every state licensing board offers a stable public search URL, so — same
+  // approach as the Yelp/BBB/State Compliance links above — this builds a targeted
+  // search rather than guessing a URL that might be wrong or dead by the time you click it.
+  const licenseSearchTemplates = {
+    doctor: { label: 'Medical Board License Lookup', icon: 'fas fa-stethoscope', query: (state, name) => `${state} medical board physician license lookup ${name}`, extra: { label: 'NPI Registry (federal)', icon: 'fas fa-notes-medical', url: 'https://npiregistry.cms.hhs.gov/search' } },
+    dentist: { label: 'Dental Board License Lookup', icon: 'fas fa-tooth', query: (state, name) => `${state} dental board license lookup ${name}` },
+    attorney: { label: 'State Bar Attorney Search', icon: 'fas fa-scale-balanced', query: (state, name) => `${state} state bar attorney license lookup ${name}` },
+    realestate_agent: { label: 'Real Estate Agent License Lookup', icon: 'fas fa-house', query: (state, name) => `${state} real estate commission agent license lookup ${name}` },
+    realestate_broker: { label: 'Real Estate Broker License Lookup', icon: 'fas fa-house-flag', query: (state, name) => `${state} real estate commission broker license lookup ${name}` },
+    insurance: { label: 'Insurance License Lookup', icon: 'fas fa-file-shield', query: (state, name) => `${state} department of insurance producer license lookup ${name}` },
+    electrician: { label: 'Electrician License Lookup', icon: 'fas fa-bolt', query: (state, name) => `${state} electrician license lookup ${name}` },
+    plumber: { label: 'Plumbing License Lookup', icon: 'fas fa-faucet-drip', query: (state, name) => `${state} plumbing license lookup ${name}` },
+    hvac: { label: 'HVAC License Lookup', icon: 'fas fa-fan', query: (state, name) => `${state} HVAC contractor license lookup ${name}` },
+    contractor: { label: 'Contractor License Lookup', icon: 'fas fa-helmet-safety', query: (state, name) => `${state} contractors license board lookup ${name}` },
+    cosmetologist: { label: 'Cosmetology / Barber Board License Lookup', icon: 'fas fa-scissors', query: (state, name) => `${state} cosmetology board license lookup ${name}` },
+    other: { label: 'Professional License Lookup', icon: 'fas fa-id-badge', query: (state, name) => `${state} professional license lookup ${name}` }
+  };
+
+  function buildLicenseLinks() {
+    const profession = document.getElementById('licenseProfession').value;
+    const area = document.getElementById('licenseLinkArea');
+    const grid = document.getElementById('licenseLinkGrid');
+
+    if (!profession) {
+      area.style.display = 'none';
+      grid.innerHTML = '';
+      return;
+    }
+
+    const state = document.getElementById('bizLocation').value.trim();
+    const name = (document.getElementById('licenseHolderName').value.trim() || document.getElementById('bizName').value.trim());
+    if (!name) { alert('Enter a business name or license holder name first.'); return; }
+
+    const tpl = licenseSearchTemplates[profession];
+    const q = encodeURIComponent(tpl.query(state, name).trim());
+    const links = [{ label: tpl.label, icon: tpl.icon, url: `https://www.google.com/search?q=${q}` }];
+    if (tpl.extra) links.push(tpl.extra);
+
+    grid.innerHTML = links.map(l => `
+      <a class="link-btn" href="${l.url}" target="_blank" rel="noopener">
+        <i class="${l.icon}"></i>${l.label}
+      </a>
+    `).join('');
+    area.style.display = 'block';
+  }
+
+  function updateLicenseBadge() {
+    const status = document.getElementById('licenseStatus').value;
+    const badgeDiv = document.getElementById('licenseStatusBadge');
+    if (status === 'active') badgeDiv.innerHTML = '<span class="badge green">✅ Active / Good Standing</span>';
+    else if (status === 'inactive') badgeDiv.innerHTML = '<span class="badge red">⚠️ Inactive, Expired, or Disciplined</span>';
+    else if (status === 'na') badgeDiv.innerHTML = '<span class="badge gray">Not Applicable</span>';
+    else badgeDiv.innerHTML = '<span class="badge yellow">Not Checked Yet</span>';
+  }
+  updateLicenseBadge();
+
+  function getLicensingSummaryText() {
+    const professionSel = document.getElementById('licenseProfession');
+    const professionLabel = professionSel.options[professionSel.selectedIndex].text;
+    const holderName = document.getElementById('licenseHolderName').value.trim() || '(same as business name)';
+    const statusSel = document.getElementById('licenseStatus');
+    const statusLabel = statusSel.options[statusSel.selectedIndex].text;
+    const entitySel = document.getElementById('entityType');
+    const entityLabel = entitySel.options[entitySel.selectedIndex].text;
+    const regNumber = document.getElementById('entityRegNumber').value.trim() || '(not provided)';
+
+    return `Business Entity Type: ${entityLabel}
+Registration/Filing Number: ${regNumber}
+Profession/Industry Requiring License: ${professionLabel}
+License Holder Name: ${holderName}
+License Status: ${statusLabel}`;
+  }
+
+  function getLicensingSummaryHTML() {
+    const professionSel = document.getElementById('licenseProfession');
+    const professionLabel = professionSel.options[professionSel.selectedIndex].text;
+    const holderName = document.getElementById('licenseHolderName').value.trim() || '(same as business name)';
+    const statusSel = document.getElementById('licenseStatus');
+    const statusLabel = statusSel.options[statusSel.selectedIndex].text;
+    const entitySel = document.getElementById('entityType');
+    const entityLabel = entitySel.options[entitySel.selectedIndex].text;
+    const regNumber = document.getElementById('entityRegNumber').value.trim() || '(not provided)';
+
+    return `<div class="pr-profile-grid">
+      <div class="profile-item"><div class="label">Business Entity Type</div><div class="value">${entityLabel}</div></div>
+      <div class="profile-item"><div class="label">Registration / Filing #</div><div class="value">${regNumber}</div></div>
+      <div class="profile-item"><div class="label">Profession Requiring License</div><div class="value">${professionLabel}</div></div>
+      <div class="profile-item"><div class="label">License Holder Name</div><div class="value">${holderName}</div></div>
+      <div class="profile-item" style="grid-column:1/-1;"><div class="label">License Status</div><div class="value">${statusLabel}</div></div>
+    </div>`;
+  }
+
   // ===================== COPY REPORT =====================
   function copyReport() {
     const name = document.getElementById('bizName').value.trim();
@@ -599,11 +789,15 @@
     const profileText = document.getElementById('profileGrid').innerText;
     const flagsText = document.getElementById('flagList').innerText;
     const notes = document.getElementById('notesInput').value.trim();
+    const licensingText = getLicensingSummaryText();
 
     const report = `BUSINESS ONBOARDING AUDIT — ${name}${location ? ' (' + location + ')' : ''}
 ============================================
 BUSINESS PROFILE:
 ${profileText}
+
+LICENSING & BUSINESS STRUCTURE:
+${licensingText}
 
 QUALITY CONTROL FLAGS:
 ${flagsText || 'No technical scan run yet.'}
@@ -643,6 +837,7 @@ ${notes || '(none)'}
       }).join('') + '</ul>';
     }
     const notes = document.getElementById('notesInput').value.trim();
+    const licensingHTML = getLicensingSummaryHTML();
     const dateStr = new Date().toLocaleString();
 
     const printWindow = window.open('', '_blank', 'width=900,height=1000');
@@ -698,6 +893,9 @@ ${notes || '(none)'}
 
   <h2>Business Profile (Google)</h2>
   <div class="pr-profile-grid">${profileHTML}</div>
+
+  <h2>Licensing &amp; Business Structure</h2>
+  ${licensingHTML}
 
   ${linksHTML ? `<h2>Quick Verification Links</h2><ul class="pr-links">${linksHTML}</ul>` : ''}
 
