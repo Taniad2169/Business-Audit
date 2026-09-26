@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Business Onboarding Audit &amp; Quality Control – WebSwan</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; min-height:100vh; font-family:'Segoe UI', sans-serif; overflow-x:hidden; }
+
+  body {
+    background: linear-gradient(135deg, #14395d, #38b9c9, #14395d);
+    position: relative;
+  }
+  body::before {
+    content:'';
+    position: fixed; top:-50%; left:-50%; width:200%; height:200%;
+    background: radial-gradient(circle at center, #38b9c9 0%, #14395d 50%, #14395d 100%);
+    opacity:0.35; animation: spotlightMove 15s ease-in-out infinite;
+    pointer-events:none; z-index:0;
+  }
+  @keyframes spotlightMove {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(5%,5%) scale(1.1); }
+    66% { transform: translate(-5%,-5%) scale(0.9); }
+  }
+
+  .page-wrap {
+    position:relative; z-index:10; width:100%; max-width:1100px; margin:0 auto;
+    background:white; min-height:100vh; box-shadow:0 0 60px rgba(20,57,93,0.4);
+    display:none;
+  }
+
+  /* Lock screen */
+  .lock-screen {
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background:linear-gradient(135deg, #14395d, #38b9c9, #14395d);
+    z-index:9999; display:flex; flex-direction:column; justify-content:center;
+    align-items:center; text-align:center; padding:20px; transition:opacity .5s ease;
+  }
+  .lock-screen.hidden { opacity:0; pointer-events:none; }
+  .lock-screen .brand-tag { font-size:.75rem; letter-spacing:5px; text-transform:uppercase; opacity:.8; color:rgba(255,255,255,.7); margin-bottom:8px; }
+  .lock-screen h1 { font-size:clamp(1.6rem,4.5vw,2.6rem); font-weight:800; color:white; margin-bottom:10px; text-shadow:0 2px 20px rgba(0,0,0,.2); }
+  .lock-screen .subtitle { font-size:1rem; color:rgba(255,255,255,.8); margin-bottom:20px; }
+  .shield-icon { font-size:3rem; margin-bottom:12px; display:block; color:white; }
+  .lock-icon-large { font-size:4.5rem; color:white; cursor:pointer; transition:transform .15s, text-shadow .15s; user-select:none; text-shadow:0 0 30px rgba(255,255,255,.2); margin:20px 0 10px; display:inline-block; }
+  .lock-icon-large:hover { transform:scale(1.08); text-shadow:0 0 50px rgba(255,255,255,.4); }
+  .lock-icon-large:active { transform:scale(.95); }
+  .click-counter { color:rgba(255,255,255,.4); font-size:.8rem; margin-top:6px; min-height:24px; letter-spacing:2px; }
+  .password-field-wrap { margin-top:20px; display:none; width:100%; max-width:320px; animation:fadeIn .4s ease; }
+  .password-field-wrap.show { display:flex; flex-direction:column; gap:12px; align-items:center; }
+  .password-field-wrap input { width:100%; padding:16px 22px; border-radius:50px; border:3px solid rgba(255,255,255,.3); background:rgba(255,255,255,.1); backdrop-filter:blur(4px); font-size:16px; color:white; outline:none; transition:border-color .25s, background .25s; text-align:center; letter-spacing:2px; }
+  .password-field-wrap input::placeholder { color:rgba(255,255,255,.5); }
+  .password-field-wrap input:focus { border-color:white; background:rgba(255,255,255,.15); }
+  .password-field-wrap .btn-unlock { background:white; color:#14395d; border:none; padding:16px 28px; border-radius:50px; font-weight:700; font-size:1rem; cursor:pointer; width:100%; transition:transform .15s, box-shadow .15s; box-shadow:0 4px 20px rgba(0,0,0,.15); }
+  .password-field-wrap .btn-unlock:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(0,0,0,.25); }
+  .password-msg { color:#ffd6d6; font-size:.85rem; min-height:22px; margin-top:4px; }
+  @keyframes fadeIn { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+  /* Header */
+  .ws-header { background:linear-gradient(90deg,#14395d,#38b9c9,#14395d); color:white; padding:30px 40px 26px; text-align:center; }
+  .ws-header .brand-tag { font-size:.75rem; letter-spacing:5px; text-transform:uppercase; opacity:.8; margin-bottom:8px; }
+  .ws-header h1 { font-size:clamp(1.4rem,3.6vw,2.1rem); font-weight:800; line-height:1.25; }
+  .ws-header .subtitle { margin-top:8px; font-size:.9rem; opacity:.85; }
+
+  .ws-body { padding:40px clamp(18px,5vw,60px); max-width:960px; margin:0 auto; }
+
+  .info-banner { background:linear-gradient(135deg, rgba(56,185,201,.12), rgba(20,57,93,.06)); border-left:6px solid #38b9c9; border-radius:12px; padding:18px 20px; margin-bottom:32px; font-size:.9rem; color:#14395d; line-height:1.6; }
+  .info-banner strong { display:block; margin-bottom:5px; font-size:1rem; }
+
+  .search-card { border:2px solid #e3e3e3; border-radius:16px; padding:24px; background:#fafafa; margin-bottom:32px; }
+  .search-card .field-row { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .search-card label { display:block; font-weight:700; color:#14395d; margin-bottom:8px; font-size:.9rem; }
+  .field-group { flex:1; min-width:220px; }
+  .search-card input { width:100%; padding:14px 20px; border-radius:50px; border:3px solid #ddd; font-size:15px; color:#14395d; outline:none; transition:border-color .25s; }
+  .search-card input:focus { border-color:#38b9c9; }
+  .search-card input::placeholder { color:#aaa; }
+
+  .btn-primary { background:linear-gradient(45deg,#14395d,#38b9c9); color:white; border:none; padding:16px 30px; border-radius:50px; font-weight:700; font-size:1rem; cursor:pointer; display:inline-flex; align-items:center; gap:9px; transition:opacity .2s, transform .15s; }
+  .btn-primary:hover { opacity:.88; transform:translateY(-2px); }
+  .btn-primary:active { transform:translateY(0); }
+  .btn-primary:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+  .btn-secondary { background:white; color:#14395d; border:2px solid #14395d; padding:12px 22px; border-radius:50px; font-weight:700; cursor:pointer; font-size:.9rem; display:inline-flex; align-items:center; gap:8px; transition:background .2s, color .2s; }
+  .btn-secondary:hover { background:#14395d; color:white; }
+
+  .loading-line { display:none; align-items:center; gap:10px; color:#14395d; font-weight:600; margin-top:10px; font-size:.9rem; }
+  .loading-line.show { display:flex; }
+
+  /* Result cards */
+  .result-section { display:none; animation:fadeIn .35s ease; margin-bottom:28px; }
+  .result-section.show { display:block; }
+  .card { border:2px solid #e3e3e3; border-radius:16px; overflow:hidden; margin-bottom:24px; background:#fff; }
+  .card-header { background:linear-gradient(90deg,#14395d,#38b9c9); color:white; padding:14px 20px; font-weight:700; font-size:1rem; display:flex; align-items:center; gap:10px; }
+  .card-body { padding:22px; }
+
+  .profile-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px; }
+  .profile-item { background:#f7f9fb; border-radius:10px; padding:12px 16px; }
+  .profile-item .label { font-size:.72rem; text-transform:uppercase; letter-spacing:1px; color:#38b9c9; font-weight:700; margin-bottom:4px; }
+  .profile-item .value { color:#14395d; font-size:.95rem; font-weight:600; word-break:break-word; }
+  .profile-item .value a { color:#14395d; text-decoration:underline; }
+
+  .stars { color:#f5b301; font-size:1rem; }
+
+  .badge { display:inline-block; padding:5px 12px; border-radius:50px; font-weight:700; font-size:.75rem; }
+  .badge.green { background:#d4edda; color:#155724; }
+  .badge.red { background:#f8d7da; color:#721c24; }
+  .badge.yellow { background:#fff3cd; color:#856404; }
+  .badge.gray { background:#e2e3e5; color:#383d41; }
+
+  .link-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:12px; }
+  .link-btn { background:white; border:2px solid #e0e0e0; border-radius:12px; padding:14px; text-align:center; text-decoration:none; color:#14395d; font-weight:700; font-size:.85rem; display:flex; flex-direction:column; align-items:center; gap:8px; transition:border-color .2s, transform .15s; }
+  .link-btn:hover { border-color:#38b9c9; transform:translateY(-2px); }
+  .link-btn i { font-size:1.4rem; color:#38b9c9; }
+
+  .tech-input-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .tech-input-row input { flex:1; min-width:220px; padding:14px 18px; border-radius:50px; border:3px solid #ddd; font-size:15px; color:#14395d; outline:none; }
+  .tech-input-row input:focus { border-color:#38b9c9; }
+
+  .score-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:14px; margin-bottom:18px; }
+  .score-box { background:#f7f9fb; border-radius:12px; padding:16px; text-align:center; }
+  .score-box .num { font-size:1.8rem; font-weight:800; }
+  .score-box .num.good { color:#155724; }
+  .score-box .num.mid { color:#856404; }
+  .score-box .num.bad { color:#721c24; }
+  .score-box .lbl { font-size:.75rem; color:#666; text-transform:uppercase; letter-spacing:.5px; margin-top:4px; }
+
+  .flag-list { list-style:none; }
+  .flag-list li { padding:10px 14px; border-radius:10px; margin-bottom:8px; font-size:.88rem; display:flex; gap:10px; align-items:flex-start; }
+  .flag-list li.ok { background:#eaf7ee; color:#155724; }
+  .flag-list li.warn { background:#fff8e6; color:#7a5c00; }
+  .flag-list li.bad { background:#fdeceb; color:#7a1f1a; }
+  .flag-list li i { margin-top:2px; }
+
+  .notes-box textarea { width:100%; min-height:110px; padding:14px 16px; border-radius:12px; border:2px solid #ddd; font-size:.9rem; color:#14395d; outline:none; resize:vertical; font-family:inherit; }
+  .notes-box textarea:focus { border-color:#38b9c9; }
+
+  .util-tool { border:2px solid #e3e3e3; border-radius:16px; background:#fafafa; overflow:hidden; margin-bottom:20px; }
+  .util-tool .input-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+  .util-tool .input-row input { flex:1; min-width:180px; padding:13px 18px; border-radius:50px; border:3px solid #ddd; font-size:14px; color:#14395d; outline:none; }
+  .util-result { background:white; border-radius:12px; padding:14px 18px; border:2px solid #e0e0e0; font-size:.85rem; color:#14395d; margin-top:10px; display:none; }
+  .util-result.show { display:block; }
+
+  .ws-footer { padding:22px 40px; border-top:1px solid #eee; text-align:center; font-size:.8rem; color:#999; }
+  .ws-footer span { color:#38b9c9; font-weight:700; }
+
+  .section-title { color:#14395d; font-weight:800; font-size:1.1rem; margin:36px 0 14px; display:flex; align-items:center; gap:10px; }
+  .section-title i { color:#38b9c9; }
+
+  @media (max-width:480px) { .field-row, .tech-input-row, .input-row { flex-direction:column; } .btn-primary { width:100%; justify-content:center; } }
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div class="lock-screen" id="lockScreen">
+  <i class="fas fa-shield-halved shield-icon"></i>
+  <p class="brand-tag">WebSwan Tools</p>
+  <h1>Business Onboarding Audit &amp; Quality Control</h1>
+  <p class="subtitle">Verify a prospect before you call — in one place</p>
+
+  <div class="lock-icon-large" id="lockIconLarge"><i class="fas fa-lock"></i></div>
+  <div class="click-counter" id="clickCounter">—</div>
+
+  <div class="password-field-wrap" id="passwordFieldWrap">
+    <input type="password" id="passwordInput" placeholder="Enter password" onkeydown="if(event.key==='Enter') unlockContent()">
+    <button class="btn-unlock" onclick="unlockContent()"><i class="fas fa-key"></i> Unlock</button>
+    <div class="password-msg" id="lockMsg"></div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="page-wrap" id="mainContent">
+
+  <div class="ws-header">
+    <i class="fas fa-shield-halved shield-icon"></i>
+    <p class="brand-tag">WebSwan Tools</p>
+    <h1>Business Onboarding Audit &amp; Quality Control</h1>
+    <p class="subtitle">Look up a business, check its reputation, and scan its website — before you dial</p>
+  </div>
+
+  <div class="ws-body">
+
+    <div class="info-banner">
+      <strong><i class="fas fa-circle-info" style="margin-right:6px;"></i>How it works</strong>
+      Enter the business name and location and we'll pull what Google has on file (address, phone, rating, hours), hand you one-click search links for Yelp, BBB, Yahoo and social so you can verify the rest yourself in seconds, and run a technical scan of their website (speed, SEO, HTTPS, mobile-friendliness, and basic info-mismatch flags).
+    </div>
+
+    <!-- SEARCH -->
+    <div class="search-card">
+      <div class="field-row">
+        <div class="field-group">
+          <label for="bizName"><i class="fas fa-building" style="color:#38b9c9;margin-right:6px;"></i>Business Name</label>
+          <input type="text" id="bizName" placeholder="e.g. Kaizen Chiropractic + Wellness" autocomplete="off">
+        </div>
+        <div class="field-group">
+          <label for="bizLocation"><i class="fas fa-map-location-dot" style="color:#38b9c9;margin-right:6px;"></i>Location (city, state)</label>
+          <input type="text" id="bizLocation" placeholder="e.g. Berkeley, CA" autocomplete="off" onkeydown="if(event.key==='Enter') runAudit()">
+        </div>
+      </div>
+      <button class="btn-primary" id="runAuditBtn" onclick="runAudit()"><i class="fas fa-magnifying-glass"></i> Run Audit</button>
+      <div class="loading-line" id="searchLoading"><i class="fas fa-spinner fa-spin"></i> Looking up business…</div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="result-section" id="resultSection">
+
+      <!-- Business Profile -->
+      <div class="card">
+        <div class="card-header"><i class="fas fa-id-card"></i> Business Profile (Google)</div>
+        <div class="card-body" id="profileBody">
+          <div class="profile-grid" id="profileGrid"></div>
+        </div>
+      </div>
+
+      <!-- Quick Verification Links -->
+      <div class="card">
+        <div class="card-header"><i class="fas fa-link"></i> Quick Verification Links</div>
+        <div class="card-body">
+          <p style="color:#666; font-size:.85rem; margin-bottom:14px;">Yelp, BBB, Yahoo and social platforms don't offer public data feeds — these open a pre-filled search so you can eyeball reviews, complaints, and social presence in one click each.</p>
+          <div class="link-grid" id="linkGrid"></div>
+        </div>
+      </div>
+
+      <!-- Technical Audit -->
+      <div class="card">
+        <div class="card-header"><i class="fas fa-gauge-high"></i> Website Technical Audit</div>
+        <div class="card-body">
+          <div class="tech-input-row">
+            <input type="text" id="techUrlInput" placeholder="Website URL (auto-filled if found)">
+            <button class="btn-primary" onclick="runTechAudit()"><i class="fas fa-satellite-dish"></i> Scan Website</button>
+          </div>
+          <div class="loading-line" id="techLoading"><i class="fas fa-spinner fa-spin"></i> Scanning site (this can take 10-20 seconds)…</div>
+
+          <div id="scoreArea" style="display:none;">
+            <div class="score-grid" id="scoreGrid"></div>
+          </div>
+
+          <div id="flagArea" style="display:none;">
+            <p style="color:#14395d; font-weight:700; margin:16px 0 8px;">Quality Control Flags</p>
+            <ul class="flag-list" id="flagList"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="card">
+        <div class="card-header"><i class="fas fa-pen"></i> Your Notes</div>
+        <div class="card-body notes-box">
+          <textarea id="notesInput" placeholder="Anything you noticed manually — duplicate listings, mismatched name spelling, outdated hours, etc."></textarea>
+          <div style="margin-top:12px;">
+            <button class="btn-secondary" onclick="copyReport()"><i class="fas fa-copy"></i> Copy Full Report</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Standalone utilities -->
+    <div class="section-title"><i class="fas fa-toolbox"></i> Extra Tools</div>
+
+    <div class="util-tool">
+      <div class="card-header"><i class="fas fa-link"></i> Broken Link Checker</div>
+      <div class="card-body">
+        <div class="input-row">
+          <input type="text" id="brokenLinkInput" placeholder="Enter a URL to check (e.g. https://example.com/page)">
+          <button class="btn-secondary" onclick="checkBrokenLink()"><i class="fas fa-check-circle"></i> Check</button>
+        </div>
+        <div class="util-result" id="brokenLinkResult"></div>
+      </div>
+    </div>
+
+    <div class="util-tool">
+      <div class="card-header"><i class="fas fa-gavel"></i> Website Penalty by State</div>
+      <div class="card-body">
+        <div class="input-row">
+          <input type="text" id="stateInput" placeholder="e.g. California, Texas, Florida…" onkeydown="if(event.key==='Enter') searchStateCompliance()">
+          <button class="btn-secondary" onclick="searchStateCompliance()"><i class="fas fa-magnifying-glass"></i> Search</button>
+        </div>
+        <div class="util-result" id="stateResult"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="ws-footer"><span>WebSwan</span> · Digital Marketing Solutions</div>
+</div>
+
+<script>
+  // ===================== CONFIG =====================
+  const GOOGLE_API_KEY = "AIzaSyAuUaiKAZBnVa1xQ2qyR0vgC5t76O2YJbw";
+
+  // ===================== LOCK SCREEN =====================
+  let clickCount = 0;
+  let clickTimer = null;
+  const lockIcon = document.getElementById('lockIconLarge');
+  const clickCounter = document.getElementById('clickCounter');
+  const passwordWrap = document.getElementById('passwordFieldWrap');
+  const lockScreen = document.getElementById('lockScreen');
+  const mainContent = document.getElementById('mainContent');
+  const lockMsg = document.getElementById('lockMsg');
+
+  lockIcon.addEventListener('click', function () {
+    clickCount++;
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => { clickCount = 0; clickCounter.textContent = '—'; }, 3000);
+    clickCounter.textContent = `${clickCount} / 7`;
+    if (clickCount >= 7) {
+      clickCount = 0;
+      clickCounter.textContent = '✓';
+      passwordWrap.classList.add('show');
+      document.getElementById('passwordInput').focus();
+      lockMsg.textContent = '';
+    }
+  });
+
+  function unlockContent() {
+    const pwd = document.getElementById('passwordInput').value;
+    if (pwd === '333777') {
+      lockMsg.style.color = '#a8f0c0';
+      lockMsg.textContent = '✅ Access granted.';
+      lockScreen.classList.add('hidden');
+      setTimeout(() => { lockScreen.style.display = 'none'; mainContent.style.display = 'block'; }, 500);
+    } else {
+      lockMsg.style.color = '#ffb3b3';
+      lockMsg.textContent = '❌ Incorrect password.';
+      document.getElementById('passwordInput').value = '';
+      document.getElementById('passwordInput').focus();
+    }
+  }
+
+  // ===================== BUSINESS SEARCH (Google Places) =====================
+  let currentPlace = null;
+
+  async function runAudit() {
+    const name = document.getElementById('bizName').value.trim();
+    const location = document.getElementById('bizLocation').value.trim();
+    if (!name) { document.getElementById('bizName').focus(); return; }
+
+    const btn = document.getElementById('runAuditBtn');
+    const loading = document.getElementById('searchLoading');
+    btn.disabled = true;
+    loading.classList.add('show');
+    document.getElementById('resultSection').classList.remove('show');
+
+    try {
+      const query = location ? `${name} ${location}` : name;
+      const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': GOOGLE_API_KEY,
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.rating,places.userRatingCount,places.currentOpeningHours,places.businessStatus,places.types,places.googleMapsUri'
+        },
+        body: JSON.stringify({ textQuery: query })
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        renderProfileError(data.error ? data.error.message : 'Could not reach Google Places API.');
+        currentPlace = null;
+      } else if (!data.places || data.places.length === 0) {
+        renderProfileError('No business found on Google matching that name/location. Double-check spelling or try without the location.');
+        currentPlace = null;
+      } else {
+        currentPlace = data.places[0];
+        renderProfile(currentPlace, name, location);
+      }
+
+      buildQuickLinks(name, location);
+      document.getElementById('resultSection').classList.add('show');
+
+      if (currentPlace && currentPlace.websiteUri) {
+        document.getElementById('techUrlInput').value = currentPlace.websiteUri;
+      }
+
+    } catch (err) {
+      renderProfileError('Error contacting Google: ' + err.message);
+      buildQuickLinks(name, location);
+      document.getElementById('resultSection').classList.add('show');
+    } finally {
+      btn.disabled = false;
+      loading.classList.remove('show');
+    }
+  }
+
+  function renderProfileError(msg) {
+    document.getElementById('profileGrid').innerHTML = `
+      <div class="profile-item" style="grid-column:1/-1;">
+        <div class="label">Notice</div>
+        <div class="value">${msg}</div>
+      </div>`;
+  }
+
+  function starString(rating) {
+    if (!rating) return '';
+    const full = Math.round(rating);
+    return '★'.repeat(full) + '☆'.repeat(5 - full);
+  }
+
+  function renderProfile(place, name, location) {
+    const displayName = place.displayName ? place.displayName.text : name;
+    const address = place.formattedAddress || '—';
+    const phone = place.nationalPhoneNumber || place.internationalPhoneNumber || '—';
+    const website = place.websiteUri || '';
+    const rating = place.rating || null;
+    const reviewCount = place.userRatingCount || 0;
+    const status = place.businessStatus || 'UNKNOWN';
+    const mapsUri = place.googleMapsUri || '#';
+
+    let statusBadge = '<span class="badge gray">Unknown</span>';
+    if (status === 'OPERATIONAL') statusBadge = '<span class="badge green">Operational</span>';
+    else if (status === 'CLOSED_TEMPORARILY') statusBadge = '<span class="badge yellow">Temporarily Closed</span>';
+    else if (status === 'CLOSED_PERMANENTLY') statusBadge = '<span class="badge red">Permanently Closed</span>';
+
+    let hoursToday = '—';
+    if (place.currentOpeningHours && place.currentOpeningHours.weekdayDescriptions) {
+      hoursToday = place.currentOpeningHours.weekdayDescriptions.join('<br>');
+    }
+
+    document.getElementById('profileGrid').innerHTML = `
+      <div class="profile-item"><div class="label">Name</div><div class="value">${displayName}</div></div>
+      <div class="profile-item"><div class="label">Status</div><div class="value">${statusBadge}</div></div>
+      <div class="profile-item"><div class="label">Address</div><div class="value">${address}</div></div>
+      <div class="profile-item"><div class="label">Phone</div><div class="value">${phone}</div></div>
+      <div class="profile-item"><div class="label">Website</div><div class="value">${website ? `<a href="${website}" target="_blank" rel="noopener">${website}</a>` : '—'}</div></div>
+      <div class="profile-item"><div class="label">Rating</div><div class="value"><span class="stars">${starString(rating)}</span> ${rating ? rating.toFixed(1) : 'N/A'} (${reviewCount} reviews)</div></div>
+      <div class="profile-item" style="grid-column:1/-1;"><div class="label">Hours</div><div class="value" style="font-weight:500; font-size:.85rem;">${hoursToday}</div></div>
+      <div class="profile-item"><div class="label">Google Maps</div><div class="value"><a href="${mapsUri}" target="_blank" rel="noopener">Open in Maps <i class="fas fa-arrow-up-right-from-square"></i></a></div></div>
+    `;
+  }
+
+  function buildQuickLinks(name, location) {
+    const q = encodeURIComponent(name);
+    const qLoc = encodeURIComponent(location || '');
+    const full = encodeURIComponent(`${name} ${location}`.trim());
+
+    const links = [
+      { label: 'Yelp', icon: 'fa-brands fa-yelp', url: `https://www.yelp.com/search?find_desc=${q}&find_loc=${qLoc}` },
+      { label: 'BBB', icon: 'fas fa-shield-halved', url: `https://www.bbb.org/search?find_text=${q}&find_loc=${qLoc}` },
+      { label: 'Yahoo Search', icon: 'fa-brands fa-yahoo', url: `https://search.yahoo.com/search?p=${full}+reviews` },
+      { label: 'Facebook', icon: 'fa-brands fa-facebook', url: `https://www.facebook.com/search/top?q=${full}` },
+      { label: 'Instagram', icon: 'fa-brands fa-instagram', url: `https://www.instagram.com/explore/search/keyword/?q=${q}` },
+      { label: 'LinkedIn', icon: 'fa-brands fa-linkedin', url: `https://www.linkedin.com/search/results/companies/?keywords=${q}` },
+      { label: 'Owner / Years in Business', icon: 'fas fa-user-tie', url: `https://www.google.com/search?q=${full}+owner+years+in+business` },
+      { label: 'General Reviews', icon: 'fas fa-star', url: `https://www.google.com/search?q=${full}+reviews` }
+    ];
+
+    document.getElementById('linkGrid').innerHTML = links.map(l => `
+      <a class="link-btn" href="${l.url}" target="_blank" rel="noopener">
+        <i class="${l.icon}"></i>${l.label}
+      </a>
+    `).join('');
+  }
+
+  // ===================== TECHNICAL AUDIT =====================
+  function scoreClass(score) {
+    if (score >= 90) return 'good';
+    if (score >= 50) return 'mid';
+    return 'bad';
+  }
+
+  async function runTechAudit() {
+    let url = document.getElementById('techUrlInput').value.trim();
+    if (!url) { document.getElementById('techUrlInput').focus(); return; }
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+    const loading = document.getElementById('techLoading');
+    const scoreArea = document.getElementById('scoreArea');
+    const flagArea = document.getElementById('flagArea');
+    const flags = [];
+
+    loading.classList.add('show');
+    scoreArea.style.display = 'none';
+    flagArea.style.display = 'none';
+
+    // HTTPS check
+    if (url.startsWith('https://')) {
+      flags.push({ type: 'ok', text: 'Site loads over HTTPS.' });
+    } else {
+      flags.push({ type: 'bad', text: 'Site is not using HTTPS — this is a red flag for visitors and search engines.' });
+    }
+
+    // PageSpeed Insights
+    try {
+      const psiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${GOOGLE_API_KEY}&strategy=mobile&category=performance&category=seo&category=accessibility&category=best-practices`;
+      const psiResp = await fetch(psiUrl);
+      const psiData = await psiResp.json();
+
+      if (psiResp.ok && psiData.lighthouseResult) {
+        const cats = psiData.lighthouseResult.categories;
+        const scores = {
+          Performance: Math.round((cats.performance ? cats.performance.score : 0) * 100),
+          SEO: Math.round((cats.seo ? cats.seo.score : 0) * 100),
+          Accessibility: Math.round((cats.accessibility ? cats.accessibility.score : 0) * 100),
+          'Best Practices': Math.round((cats['best-practices'] ? cats['best-practices'].score : 0) * 100)
+        };
+
+        document.getElementById('scoreGrid').innerHTML = Object.entries(scores).map(([label, val]) => `
+          <div class="score-box">
+            <div class="num ${scoreClass(val)}">${val}</div>
+            <div class="lbl">${label}</div>
+          </div>
+        `).join('');
+        scoreArea.style.display = 'block';
+
+        Object.entries(scores).forEach(([label, val]) => {
+          if (val < 50) flags.push({ type: 'bad', text: `${label} score is low (${val}/100).` });
+          else if (val < 90) flags.push({ type: 'warn', text: `${label} score could be improved (${val}/100).` });
+          else flags.push({ type: 'ok', text: `${label} score is strong (${val}/100).` });
+        });
+      } else {
+        flags.push({ type: 'warn', text: 'Could not run the PageSpeed scan for this URL (it may be unreachable or blocking automated scans).' });
+      }
+    } catch (e) {
+      flags.push({ type: 'warn', text: 'PageSpeed scan failed: ' + e.message });
+    }
+
+    // Fetch homepage HTML for content-level checks
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const resp = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store', signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (resp.ok) {
+        const html = await resp.text();
+        const lower = html.toLowerCase();
+
+        if (/<meta\s+name=["']viewport["']/i.test(lower)) {
+          flags.push({ type: 'ok', text: 'Mobile viewport meta tag found — site is set up to be mobile responsive.' });
+        } else {
+          flags.push({ type: 'bad', text: 'No mobile viewport meta tag found — site may not display correctly on phones.' });
+        }
+
+        const titleMatch = html.match(/<title>([^<]*)<\/title>/i);
+        if (titleMatch && titleMatch[1].trim()) {
+          flags.push({ type: 'ok', text: `Page title present: "${titleMatch[1].trim().slice(0,70)}"` });
+        } else {
+          flags.push({ type: 'bad', text: 'No page title tag found — bad for SEO.' });
+        }
+
+        if (/<meta\s+name=["']description["']/i.test(lower)) {
+          flags.push({ type: 'ok', text: 'Meta description found.' });
+        } else {
+          flags.push({ type: 'warn', text: 'No meta description found — missed SEO opportunity.' });
+        }
+
+        // Name mismatch check
+        if (currentPlace && currentPlace.displayName) {
+          const bizName = currentPlace.displayName.text.toLowerCase();
+          const nameWords = bizName.split(/\s+/).filter(w => w.length > 3);
+          const found = nameWords.some(w => lower.includes(w));
+          if (nameWords.length && !found) {
+            flags.push({ type: 'warn', text: `The business name "${currentPlace.displayName.text}" wasn't clearly found on the homepage — double check this is the right site.` });
+          }
+        }
+
+        // Phone mismatch check
+        if (currentPlace && currentPlace.nationalPhoneNumber) {
+          const digitsOnly = currentPlace.nationalPhoneNumber.replace(/\D/g, '');
+          const last7 = digitsOnly.slice(-7);
+          if (last7 && lower.replace(/\D/g, '').includes(last7)) {
+            flags.push({ type: 'ok', text: 'Phone number on Google matches a number found on the website.' });
+          } else if (last7) {
+            flags.push({ type: 'warn', text: 'Could not confirm the Google-listed phone number appears on the website — check for a mismatch.' });
+          }
+        }
+
+      } else {
+        flags.push({ type: 'warn', text: `Homepage responded with status ${resp.status} — worth checking manually.` });
+      }
+    } catch (e) {
+      flags.push({ type: 'warn', text: 'Could not fetch the homepage directly from the browser (this can happen due to the site\'s security settings) — please open the site manually to double check content.' });
+    }
+
+    document.getElementById('flagList').innerHTML = flags.map(f => `
+      <li class="${f.type}"><i class="fas ${f.type === 'ok' ? 'fa-circle-check' : f.type === 'warn' ? 'fa-triangle-exclamation' : 'fa-circle-xmark'}"></i>${f.text}</li>
+    `).join('');
+    flagArea.style.display = 'block';
+    loading.classList.remove('show');
+  }
+
+  // ===================== COPY REPORT =====================
+  function copyReport() {
+    const name = document.getElementById('bizName').value.trim();
+    const location = document.getElementById('bizLocation').value.trim();
+    const profileText = document.getElementById('profileGrid').innerText;
+    const flagsText = document.getElementById('flagList').innerText;
+    const notes = document.getElementById('notesInput').value.trim();
+
+    const report = `BUSINESS ONBOARDING AUDIT — ${name}${location ? ' (' + location + ')' : ''}
+============================================
+BUSINESS PROFILE:
+${profileText}
+
+QUALITY CONTROL FLAGS:
+${flagsText || 'No technical scan run yet.'}
+
+NOTES:
+${notes || '(none)'}
+`;
+    navigator.clipboard?.writeText(report).then(() => {
+      alert('Report copied to clipboard!');
+    });
+  }
+
+  // ===================== BROKEN LINK CHECKER =====================
+  async function checkBrokenLink() {
+    const input = document.getElementById('brokenLinkInput');
+    const resultDiv = document.getElementById('brokenLinkResult');
+    let url = input.value.trim();
+    if (!url) { input.focus(); return; }
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+    resultDiv.classList.add('show');
+    resultDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Checking ${url} ...`;
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      let status = 0, statusText = 'Unknown', isBroken = true;
+      try {
+        const resp2 = await fetch(url, { method: 'GET', cache: 'no-store', mode: 'cors', signal: controller.signal });
+        status = resp2.status; statusText = resp2.statusText;
+        isBroken = (status < 200 || status >= 400);
+      } catch (e) {
+        try {
+          await fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' });
+          isBroken = false; statusText = 'reachable (opaque)';
+        } catch (e2) { isBroken = true; statusText = 'unreachable'; }
+      }
+      clearTimeout(timeout);
+
+      const badge = isBroken
+        ? `<span class="badge red">⚠️ Broken</span>`
+        : `<span class="badge green">✅ Working</span>`;
+      resultDiv.innerHTML = `<div><strong>${url}</strong></div><div style="margin-top:6px;">${badge}</div><div style="margin-top:6px;">Status ${status || 'unknown'} — ${statusText}</div>`;
+    } catch (error) {
+      resultDiv.innerHTML = `<div><strong>${url}</strong></div><span class="badge red">⚠️ Broken</span><div style="margin-top:6px;">Error: ${error.message}</div>`;
+    }
+  }
+
+  // ===================== STATE PENALTY SEARCH =====================
+  function searchStateCompliance() {
+    const val = document.getElementById('stateInput').value.trim();
+    const resultDiv = document.getElementById('stateResult');
+    if (!val) { document.getElementById('stateInput').focus(); return; }
+    const url = `https://www.google.com/search?q=state+of+${encodeURIComponent(val)}+website+compliance+penalty`;
+    resultDiv.classList.add('show');
+    resultDiv.innerHTML = `<div style="word-break:break-all;">${url}</div>
+      <div style="margin-top:10px;"><a class="btn-secondary" href="${url}" target="_blank" rel="noopener" style="text-decoration:none;"><i class="fas fa-arrow-up-right-from-square"></i> Open Results</a></div>`;
+  }
+</script>
+</body>
+</html>
