@@ -249,8 +249,9 @@
         <div class="card-header"><i class="fas fa-pen"></i> Your Notes</div>
         <div class="card-body notes-box">
           <textarea id="notesInput" placeholder="Anything you noticed manually — duplicate listings, mismatched name spelling, outdated hours, etc."></textarea>
-          <div style="margin-top:12px;">
+          <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
             <button class="btn-secondary" onclick="copyReport()"><i class="fas fa-copy"></i> Copy Full Report</button>
+            <button class="btn-primary" onclick="printReport()"><i class="fas fa-file-pdf"></i> Print / Download PDF</button>
           </div>
         </div>
       </div>
@@ -279,6 +280,14 @@
           <button class="btn-secondary" onclick="searchStateCompliance()"><i class="fas fa-magnifying-glass"></i> Search</button>
         </div>
         <div class="util-result" id="stateResult"></div>
+      </div>
+    </div>
+
+    <div class="util-tool">
+      <div class="card-header"><i class="fas fa-language"></i> WebSwan Compliance Ad Campaign (English/Spanish)</div>
+      <div class="card-body">
+        <p style="color:#666; font-size:.85rem; margin-bottom:14px;">Open the WebSwan English/Spanish ADA compliance ad campaign tool in a new tab.</p>
+        <a class="btn-primary" href="https://taniad2169.github.io/WebSwan-Compliance-English-Spanish-Ad-Campaign/" target="_blank" rel="noopener" style="text-decoration:none;"><i class="fas fa-arrow-up-right-from-square"></i> Open Compliance Ad Campaign Tool</a>
       </div>
     </div>
 
@@ -605,6 +614,112 @@ ${notes || '(none)'}
     navigator.clipboard?.writeText(report).then(() => {
       alert('Report copied to clipboard!');
     });
+  }
+
+  // ===================== PRINT / DOWNLOAD PDF =====================
+  function printReport() {
+    const name = document.getElementById('bizName').value.trim() || 'Business Audit';
+    const location = document.getElementById('bizLocation').value.trim();
+    const profileHTML = document.getElementById('profileGrid').innerHTML || '<p>No business profile looked up yet.</p>';
+    const linkGrid = document.getElementById('linkGrid');
+    const linksHTML = linkGrid && linkGrid.innerHTML
+      ? Array.from(linkGrid.querySelectorAll('a')).map(a => `<li>${a.textContent.trim()}: <a href="${a.href}">${a.href}</a></li>`).join('')
+      : '';
+    const scoreGrid = document.getElementById('scoreGrid');
+    let scoresHTML = '';
+    if (scoreGrid && scoreGrid.innerHTML) {
+      scoresHTML = Array.from(scoreGrid.querySelectorAll('.score-box')).map(box => {
+        const num = box.querySelector('.num') ? box.querySelector('.num').textContent : '';
+        const lbl = box.querySelector('.lbl') ? box.querySelector('.lbl').textContent : '';
+        return `<div class="pr-score"><div class="pr-score-num">${num}</div><div class="pr-score-lbl">${lbl}</div></div>`;
+      }).join('');
+    }
+    const flagList = document.getElementById('flagList');
+    let flagsHTML = '<p>No technical scan run yet.</p>';
+    if (flagList && flagList.innerHTML) {
+      flagsHTML = '<ul class="pr-flags">' + Array.from(flagList.querySelectorAll('li')).map(li => {
+        const cls = li.className || '';
+        return `<li class="${cls}">${li.textContent.trim()}</li>`;
+      }).join('') + '</ul>';
+    }
+    const notes = document.getElementById('notesInput').value.trim();
+    const dateStr = new Date().toLocaleString();
+
+    const printWindow = window.open('', '_blank', 'width=900,height=1000');
+    if (!printWindow) {
+      alert('Please allow pop-ups to print or save the PDF report.');
+      return;
+    }
+
+    printWindow.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Business Audit Report — ${name}</title>
+<style>
+  * { box-sizing:border-box; }
+  body { font-family:'Segoe UI', Arial, sans-serif; color:#14395d; padding:30px 40px; }
+  .pr-header { border-bottom:4px solid #38b9c9; padding-bottom:16px; margin-bottom:24px; }
+  .pr-header .pr-brand { font-size:.75rem; letter-spacing:4px; text-transform:uppercase; color:#38b9c9; font-weight:700; margin-bottom:6px; }
+  .pr-header h1 { font-size:1.6rem; margin-bottom:4px; }
+  .pr-header .pr-meta { font-size:.85rem; color:#666; }
+  h2 { font-size:1.05rem; margin:26px 0 10px; color:#14395d; border-left:5px solid #38b9c9; padding-left:10px; }
+  .pr-profile-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 24px; }
+  .pr-profile-grid .profile-item { background:#f7f9fb; border-radius:8px; padding:10px 14px; }
+  .pr-profile-grid .label { font-size:.68rem; text-transform:uppercase; letter-spacing:1px; color:#38b9c9; font-weight:700; margin-bottom:3px; }
+  .pr-profile-grid .value { font-size:.9rem; font-weight:600; }
+  .pr-links { font-size:.85rem; padding-left:18px; line-height:1.8; }
+  .pr-links a { color:#14395d; }
+  .pr-scores { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:10px; }
+  .pr-score { background:#f7f9fb; border-radius:8px; padding:10px 18px; text-align:center; }
+  .pr-score-num { font-size:1.4rem; font-weight:800; }
+  .pr-score-lbl { font-size:.7rem; text-transform:uppercase; color:#666; }
+  .pr-flags { list-style:none; padding:0; font-size:.88rem; }
+  .pr-flags li { padding:8px 12px; border-radius:8px; margin-bottom:6px; }
+  .pr-flags li.ok { background:#eaf7ee; color:#155724; }
+  .pr-flags li.warn { background:#fff8e6; color:#7a5c00; }
+  .pr-flags li.bad { background:#fdeceb; color:#7a1f1a; }
+  .pr-notes { background:#f7f9fb; border-radius:8px; padding:14px; font-size:.9rem; white-space:pre-wrap; min-height:40px; }
+  .pr-footer { margin-top:36px; padding-top:14px; border-top:1px solid #eee; text-align:center; font-size:.75rem; color:#999; }
+  .pr-footer span { color:#38b9c9; font-weight:700; }
+  @media print {
+    body { padding:15px 25px; }
+    a { color:#14395d !important; text-decoration:underline; }
+  }
+</style>
+</head>
+<body>
+  <div class="pr-header">
+    <div class="pr-brand">WebSwan Tools</div>
+    <h1>Business Onboarding Audit Report</h1>
+    <div class="pr-meta">${name}${location ? ' — ' + location : ''} &nbsp;|&nbsp; Generated ${dateStr}</div>
+  </div>
+
+  <h2>Business Profile (Google)</h2>
+  <div class="pr-profile-grid">${profileHTML}</div>
+
+  ${linksHTML ? `<h2>Quick Verification Links</h2><ul class="pr-links">${linksHTML}</ul>` : ''}
+
+  <h2>Website Technical Audit</h2>
+  ${scoresHTML ? `<div class="pr-scores">${scoresHTML}</div>` : ''}
+  ${flagsHTML}
+
+  <h2>Notes</h2>
+  <div class="pr-notes">${notes ? notes.replace(/</g,'&lt;') : '(none)'}</div>
+
+  <div class="pr-footer"><span>WebSwan</span> · Digital Marketing Solutions · Business Onboarding Audit &amp; Quality Control</div>
+
+  <script>
+    window.onload = function() {
+      window.focus();
+      window.print();
+    };
+  <\/script>
+</body>
+</html>
+    `);
+    printWindow.document.close();
   }
 
   // ===================== BROKEN LINK CHECKER =====================
