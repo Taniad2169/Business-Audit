@@ -222,6 +222,10 @@
           <label for="bizLocation"><i class="fas fa-map-location-dot" style="color:#38b9c9;margin-right:6px;"></i>Location (city, state)</label>
           <input type="text" id="bizLocation" placeholder="e.g. Berkeley, CA" autocomplete="off" onkeydown="if(event.key==='Enter') runAudit()">
         </div>
+        <div class="field-group">
+          <label for="bizWebsite"><i class="fas fa-globe" style="color:#38b9c9;margin-right:6px;"></i>Website (optional backup)</label>
+          <input type="text" id="bizWebsite" placeholder="e.g. www.business.com" autocomplete="off" onkeydown="if(event.key==='Enter') runAudit()">
+        </div>
       </div>
       <button class="btn-primary" id="runAuditBtn" onclick="runAudit()"><i class="fas fa-magnifying-glass"></i> Run Audit</button>
       <div class="loading-line" id="searchLoading"><i class="fas fa-spinner fa-spin"></i> Looking up business…</div>
@@ -264,6 +268,25 @@
               <input type="text" id="entityRegNumber" placeholder="e.g. LLC or corporation filing number">
             </div>
           </div>
+          <div class="tech-input-row">
+            <div class="field-group">
+              <label for="yearEstablished"><i class="fas fa-calendar-check" style="color:#38b9c9;margin-right:6px;"></i>Year Established (optional)</label>
+              <input type="number" id="yearEstablished" min="1800" max="2100" placeholder="e.g. 2009" oninput="updateYearsDisplay()">
+            </div>
+            <div class="field-group">
+              <label for="yearSource"><i class="fas fa-magnifying-glass-chart" style="color:#38b9c9;margin-right:6px;"></i>Where you confirmed it</label>
+              <select id="yearSource" class="ws-select" onchange="updateYearsDisplay()">
+                <option value="">Select a source…</option>
+                <option value="Secretary of State filing date">Secretary of State filing date</option>
+                <option value="BBB profile (Years in Business)">BBB profile (Years in Business)</option>
+                <option value="Business website (&quot;Since&quot; / About page)">Business website ("Since" / About page)</option>
+                <option value="Professional license issue date">Professional license issue date</option>
+                <option value="Owner / staff confirmed">Owner / staff confirmed</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <p style="color:#666; font-size:.8rem; margin:-4px 0 14px;"><i class="fas fa-lightbulb" style="color:#38b9c9;margin-right:5px;"></i>Google doesn't publish a business's founding date. The fastest places to confirm it: the BBB link below (shows "Years in Business") or the Secretary of State search (shows the filing date). The website's domain age is filled in automatically as a clue.</p>
           <button class="btn-secondary" onclick="buildEntityLink()"><i class="fas fa-magnifying-glass"></i> Search State Business Registry</button>
           <div class="util-result" id="entityLinkResult"></div>
         </div>
@@ -600,17 +623,122 @@
       buildQuickLinks(name, location);
       document.getElementById('resultSection').classList.add('show');
 
-      if (currentPlace && currentPlace.websiteUri) {
-        document.getElementById('techUrlInput').value = currentPlace.websiteUri;
+      const manualSite = document.getElementById('bizWebsite').value.trim();
+      const siteUrl = (currentPlace && currentPlace.websiteUri) || manualSite;
+      if (siteUrl) {
+        document.getElementById('techUrlInput').value = siteUrl;
+        lookupDomainAge(siteUrl);
+      } else {
+        domainAge = { status: 'none' };
+        updateYearsDisplay();
       }
 
     } catch (err) {
-      renderProfileError('Error contacting Google: ' + err.message);
+      renderProfileError('Error contacting Google: ' + err.message + ' — if you opened this file from a chat preview or your computer, open the live GitHub page instead (Google only answers requests from your approved site).');
       buildQuickLinks(name, location);
+      const manualSite2 = document.getElementById('bizWebsite').value.trim();
+      if (manualSite2) { document.getElementById('techUrlInput').value = manualSite2; lookupDomainAge(manualSite2); }
       document.getElementById('resultSection').classList.add('show');
     } finally {
       btn.disabled = false;
       loading.classList.remove('show');
+    }
+  }
+
+  // ===================== YEARS IN BUSINESS =====================
+  // Google Places has no "founded" field, so we combine two things:
+  //  1) the Year Established you confirm (BBB / Secretary of State / etc.)
+  //  2) the website's domain registration date, pulled live from public
+  //     RDAP records (rdap.org) - a clue, NOT proof: the business may be
+  //     older than its website, or the domain may have been bought later.
+  let domainAge = { status: 'none' };
+
+  function registrableDomain(url) {
+    try {
+      const host = new URL(/^https?:\/\//i.test(url) ? url : 'https://' + url).hostname.replace(/^www\./i, '').toLowerCase();
+      const parts = host.split('.');
+      if (parts.length <= 2) return host;
+      const last = parts[parts.length - 1], second = parts[parts.length - 2];
+      // handle two-part endings like co.uk, com.au
+      if (last.length === 2 && second.length <= 3) return parts.slice(-3).join('.');
+      return parts.slice(-2).join('.');
+    } catch (e) { return ''; }
+  }
+
+  function yearsSince(date) {
+    const now = new Date();
+    let y = now.getFullYear() - date.getFullYear();
+    if (now.getMonth() < date.getMonth() || (now.getMonth() === date.getMonth() && now.getDate() < date.getDate())) y--;
+    return Math.max(0, y);
+  }
+
+  async function lookupDomainAge(url) {
+    const domain = registrableDomain(url);
+    if (!domain) { domainAge = { status: 'none' }; updateYearsDisplay(); return; }
+    if (domainAge.domain === domain && domainAge.status === 'found') { updateYearsDisplay(); return; }
+    domainAge = { status: 'loading', domain };
+    updateYearsDisplay();
+    try {
+      const resp = await fetch('https://rdap.org/domain/' + encodeURIComponent(domain));
+      if (!resp.ok) throw new Error('status ' + resp.status);
+      const data = await resp.json();
+      const ev = (data.events || []).find(e => /registration/i.test(e.eventAction || ''));
+      if (ev && ev.eventDate && !isNaN(new Date(ev.eventDate))) {
+        domainAge = { status: 'found', domain, date: new Date(ev.eventDate) };
+      } else {
+        domainAge = { status: 'unavailable', domain };
+      }
+    } catch (e) {
+      domainAge = { status: 'unavailable', domain };
+    }
+    updateYearsDisplay();
+  }
+
+  function ensureProfileItem(id, label, fullWidth) {
+    const grid = document.getElementById('profileGrid');
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'profile-item';
+      el.id = id;
+      if (fullWidth) el.style.gridColumn = '1/-1';
+      el.innerHTML = `<div class="label">${label}</div><div class="value"></div>`;
+      grid.appendChild(el);
+    }
+    return el.querySelector('.value');
+  }
+
+  function updateYearsDisplay() {
+    const yearsVal = ensureProfileItem('yearsInBusinessItem', 'Years in Business');
+    const domainVal = ensureProfileItem('domainAgeItem', 'Website Domain Age');
+    const yearInput = document.getElementById('yearEstablished');
+    const year = parseInt(yearInput ? yearInput.value : '', 10);
+    const sourceSel = document.getElementById('yearSource');
+    const source = sourceSel && sourceSel.value ? sourceSel.value : '';
+    const thisYear = new Date().getFullYear();
+
+    // Domain age
+    let domainText = '';
+    if (domainAge.status === 'loading') domainVal.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking ' + domainAge.domain + '…';
+    else if (domainAge.status === 'found') {
+      const d = domainAge.date;
+      const yrs = yearsSince(d);
+      domainText = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      domainVal.innerHTML = `${domainAge.domain} — registered ${domainText} (${yrs < 1 ? 'less than 1 year' : yrs + (yrs === 1 ? ' year' : ' years')})`;
+    } else if (domainAge.status === 'unavailable') domainVal.innerHTML = `${domainAge.domain} — registration date not publicly available`;
+    else domainVal.innerHTML = 'No website on file';
+
+    // Years in business
+    if (year && year >= 1800 && year <= thisYear) {
+      const yrs = thisYear - year;
+      yearsVal.innerHTML = `<span class="badge green">${yrs < 1 ? 'Less than 1 year' : yrs + (yrs === 1 ? ' year' : ' years')}</span> Established ${year}${source ? '<div style="font-size:.78rem; font-weight:500; margin-top:4px;">Source: ' + source + '</div>' : '<div style="font-size:.78rem; font-weight:500; margin-top:4px; color:#856404;">Source not marked yet</div>'}`;
+    } else if (domainAge.status === 'found') {
+      const yrs = yearsSince(domainAge.date);
+      yearsVal.innerHTML = `<span class="badge yellow">Estimate: at least ${yrs < 1 ? 'a few months' : yrs + (yrs === 1 ? ' year' : ' years')}</span><div style="font-size:.78rem; font-weight:500; margin-top:4px;">Based on website domain age (${domainText}). Confirm with BBB or the Secretary of State and enter the Year Established below.</div>`;
+    } else if (domainAge.status === 'loading') {
+      yearsVal.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Estimating…';
+    } else {
+      yearsVal.innerHTML = '<span class="badge gray">Not confirmed</span><div style="font-size:.78rem; font-weight:500; margin-top:4px;">Check BBB or the Secretary of State and enter the Year Established below.</div>';
     }
   }
 
@@ -620,6 +748,7 @@
         <div class="label">Notice</div>
         <div class="value">${msg}</div>
       </div>`;
+    updateYearsDisplay();
   }
 
   function starString(rating) {
@@ -658,6 +787,7 @@
       <div class="profile-item" style="grid-column:1/-1;"><div class="label">Hours</div><div class="value" style="font-weight:500; font-size:.85rem;">${hoursToday}</div></div>
       <div class="profile-item"><div class="label">Google Maps</div><div class="value"><a href="${mapsUri}" target="_blank" rel="noopener">Open in Maps <i class="fas fa-arrow-up-right-from-square"></i></a></div></div>
     `;
+    updateYearsDisplay();
   }
 
   function buildQuickLinks(name, location) {
@@ -694,6 +824,7 @@
     let url = document.getElementById('techUrlInput').value.trim();
     if (!url) { document.getElementById('techUrlInput').focus(); return; }
     if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    lookupDomainAge(url);
 
     const loading = document.getElementById('techLoading');
     const scoreArea = document.getElementById('scoreArea');
@@ -907,6 +1038,13 @@
   }
   updateReconciliationBadge();
 
+  function getYearEstablishedLabel() {
+    const year = parseInt(document.getElementById('yearEstablished').value, 10);
+    const src = document.getElementById('yearSource').value;
+    if (!year) return '(not confirmed)';
+    return `${year}${src ? ' — source: ' + src : ''}`;
+  }
+
   function getLicensingSummaryText() {
     const professionSel = document.getElementById('licenseProfession');
     const professionLabel = professionSel.options[professionSel.selectedIndex].text;
@@ -924,6 +1062,7 @@
 
     return `Business Entity Type: ${entityLabel}
 Registration/Filing Number: ${regNumber}
+Year Established: ${getYearEstablishedLabel()}
 Profession/Industry Requiring License: ${professionLabel}
 Regulatory Authority: ${authority}
 Licensing State: ${state}
@@ -950,6 +1089,7 @@ Identity Reconciliation: ${reconLabel}`;
     return `<div class="pr-profile-grid">
       <div class="profile-item"><div class="label">Business Entity Type</div><div class="value">${entityLabel}</div></div>
       <div class="profile-item"><div class="label">Registration / Filing #</div><div class="value">${regNumber}</div></div>
+      <div class="profile-item"><div class="label">Year Established</div><div class="value">${getYearEstablishedLabel()}</div></div>
       <div class="profile-item"><div class="label">Profession Requiring License</div><div class="value">${professionLabel}</div></div>
       <div class="profile-item"><div class="label">Regulatory Authority</div><div class="value">${authority}</div></div>
       <div class="profile-item"><div class="label">Licensing State</div><div class="value">${state}</div></div>
@@ -1052,6 +1192,8 @@ ${notes || '(none)'}
   .pr-flags li.ok { background:#eaf7ee; color:#155724; }
   .pr-flags li.warn { background:#fff8e6; color:#7a5c00; }
   .pr-flags li.bad { background:#fdeceb; color:#7a1f1a; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:50px; font-weight:700; font-size:.72rem; margin-right:6px; }
+  .badge.green { background:#d4edda; color:#155724; } .badge.red { background:#f8d7da; color:#721c24; } .badge.yellow { background:#fff3cd; color:#856404; } .badge.gray { background:#e2e3e5; color:#383d41; }
   .pr-notes { background:#f7f9fb; border-radius:8px; padding:14px; font-size:.9rem; white-space:pre-wrap; min-height:40px; }
   .pr-footer { margin-top:36px; padding-top:14px; border-top:1px solid #eee; text-align:center; font-size:.75rem; color:#999; }
   .pr-footer span { color:#38b9c9; font-weight:700; }
