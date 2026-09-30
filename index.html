@@ -222,10 +222,6 @@
           <label for="bizLocation"><i class="fas fa-map-location-dot" style="color:#38b9c9;margin-right:6px;"></i>Location (city, state)</label>
           <input type="text" id="bizLocation" placeholder="e.g. Berkeley, CA" autocomplete="off" onkeydown="if(event.key==='Enter') runAudit()">
         </div>
-        <div class="field-group">
-          <label for="bizWebsite"><i class="fas fa-globe" style="color:#38b9c9;margin-right:6px;"></i>Website (optional backup)</label>
-          <input type="text" id="bizWebsite" placeholder="e.g. www.business.com" autocomplete="off" onkeydown="if(event.key==='Enter') runAudit()">
-        </div>
       </div>
       <button class="btn-primary" id="runAuditBtn" onclick="runAudit()"><i class="fas fa-magnifying-glass"></i> Run Audit</button>
       <div class="loading-line" id="searchLoading"><i class="fas fa-spinner fa-spin"></i> Looking up business…</div>
@@ -623,21 +619,17 @@
       buildQuickLinks(name, location);
       document.getElementById('resultSection').classList.add('show');
 
-      const manualSite = document.getElementById('bizWebsite').value.trim();
-      const siteUrl = (currentPlace && currentPlace.websiteUri) || manualSite;
-      if (siteUrl) {
-        document.getElementById('techUrlInput').value = siteUrl;
-        lookupDomainAge(siteUrl);
+      if (currentPlace && currentPlace.websiteUri) {
+        document.getElementById('techUrlInput').value = currentPlace.websiteUri;
+        lookupDomainAge(currentPlace.websiteUri);
       } else {
         domainAge = { status: 'none' };
         updateYearsDisplay();
       }
 
     } catch (err) {
-      renderProfileError('Error contacting Google: ' + err.message + ' — if you opened this file from a chat preview or your computer, open the live GitHub page instead (Google only answers requests from your approved site).');
+      renderProfileError('Error contacting Google: ' + err.message);
       buildQuickLinks(name, location);
-      const manualSite2 = document.getElementById('bizWebsite').value.trim();
-      if (manualSite2) { document.getElementById('techUrlInput').value = manualSite2; lookupDomainAge(manualSite2); }
       document.getElementById('resultSection').classList.add('show');
     } finally {
       btn.disabled = false;
