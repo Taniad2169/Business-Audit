@@ -284,6 +284,7 @@
           </div>
           <p style="color:#666; font-size:.8rem; margin:-4px 0 14px;"><i class="fas fa-lightbulb" style="color:#38b9c9;margin-right:5px;"></i>Google doesn't publish a business's founding date. The fastest places to confirm it: the BBB link below (shows "Years in Business") or the Secretary of State search (shows the filing date). The website's domain age is filled in automatically as a clue.</p>
           <button class="btn-secondary" onclick="buildEntityLink()"><i class="fas fa-magnifying-glass"></i> Search State Business Registry</button>
+          <button class="btn-secondary" onclick="openAiModeSearch('year')" style="margin-left:8px;"><i class="fas fa-wand-magic-sparkles"></i> Ask Google AI: Year Established</button>
           <div class="util-result" id="entityLinkResult"></div>
         </div>
       </div>
@@ -412,6 +413,12 @@
           </div>
 
           <button class="btn-primary" onclick="buildLicenseLinks()"><i class="fas fa-magnifying-glass"></i> Find License &amp; Disciplinary Search Links</button>
+          <button class="btn-secondary" onclick="openAiModeSearch('license')" style="margin-left:8px;"><i class="fas fa-wand-magic-sparkles"></i> Ask Google AI: State License Lookup</button>
+
+          <div class="field-group" style="margin-top:18px; max-width:520px;">
+            <label for="stateLicenseVerification"><i class="fas fa-id-card" style="color:#38b9c9;margin-right:6px;"></i>State License Verification (license number, issue date, what the board shows)</label>
+            <input type="text" id="stateLicenseVerification" placeholder="e.g. CA Lic. #A12345, issued 2009, active, no discipline">
+          </div>
 
           <div id="licenseLinkArea" style="display:none; margin-top:18px;">
             <div id="licenseAuthorityLine" style="margin-bottom:12px; font-size:.85rem; color:#14395d;"></div>
@@ -973,6 +980,23 @@
   };
 
   // Step 1: identify the regulatory authority + Step 2: query it (pre-filled search)
+  // Opens Google AI Mode (udm=50) with a question built from the business on this audit.
+  // AI answers are a starting point: confirm on the state board / Secretary of State before recording.
+  function openAiModeSearch(kind) {
+    const biz = document.getElementById('bizName').value.trim();
+    const loc = document.getElementById('bizLocation').value.trim();
+    const state = document.getElementById('licenseState').value;
+    const holder = document.getElementById('licenseHolderName').value.trim();
+    let q;
+    if (kind === 'year') {
+      q = biz ? `What year was ${biz}${loc ? ' in ' + loc : ''} established and how many years has it been in business` : 'how to find the year a business was established';
+    } else {
+      const who = holder || biz;
+      q = who ? `${state || loc || 'state'} license lookup for ${who}${holder && biz ? ' (' + biz + ')' : ''}: license number, issue date, status and any discipline` : 'states license look up';
+    }
+    window.open('https://www.google.com/search?udm=50&q=' + encodeURIComponent(q), '_blank', 'noopener');
+  }
+
   function buildLicenseLinks() {
     const profession = document.getElementById('licenseProfession').value;
     const area = document.getElementById('licenseLinkArea');
