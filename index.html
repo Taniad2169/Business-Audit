@@ -1144,9 +1144,41 @@ ${notes || '(none)'}
   }
 
   // ===================== PRINT / DOWNLOAD PDF =====================
+  // ===================== STATE COMPLIANCE REFERENCE LINKS =====================
+  // Links added to the printed/PDF report for the state the report is prepared for.
+  // State links are live Google searches for that state; the others are official pages.
+  function wsComplianceLinks(state) {
+    const s = (state || '').trim();
+    const g = q => 'https://www.google.com/search?q=' + encodeURIComponent(q.trim());
+    return [
+      { t: (s || 'Your state') + ': website accessibility (ADA) lawsuits and penalties', u: g(s + ' website accessibility ADA lawsuit penalty for businesses') },
+      { t: (s || 'Your state') + ': website privacy and cookie consent penalties', u: g(s + ' website privacy law cookie consent penalty attorney general') },
+      { t: 'U.S. Department of Justice: Guidance on Web Accessibility and the ADA', u: 'https://www.ada.gov/resources/web-guidance/' },
+      { t: 'HHS: HIPAA rules for website tracking technologies (forms, analytics, pixels)', u: 'https://www.hhs.gov/hipaa/for-professionals/privacy/guidance/hipaa-online-tracking/index.html' },
+      { t: 'HHS: Business Associate Agreements (BAA) and sample provisions', u: 'https://www.hhs.gov/hipaa/for-professionals/covered-entities/sample-business-associate-agreement-provisions/index.html' },
+      { t: 'California Attorney General: Sephora $1.2 million website privacy settlement', u: 'https://oag.ca.gov/news/press-releases/attorney-general-bonta-announces-settlement-sephora-part-ongoing-enforcement' }
+    ];
+  }
+  function wsComplianceLinksHTML(state) {
+    return wsComplianceLinks(state).map(l => '<li style="margin-bottom:6px;"><a href="' + l.u + '" target="_blank" rel="noopener" style="color:#1e6f9f;text-decoration:underline;">' + l.t.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</a></li>').join('');
+  }
+  const WS_STATE_ABBR = {AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',CO:'Colorado',CT:'Connecticut',DE:'Delaware',DC:'District of Columbia',FL:'Florida',GA:'Georgia',HI:'Hawaii',ID:'Idaho',IL:'Illinois',IN:'Indiana',IA:'Iowa',KS:'Kansas',KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',MT:'Montana',NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',NM:'New Mexico',NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'};
+  // Works out the state from "City, ST" or "City, State" text.
+  function wsStateFromText(text) {
+    const t = (text || '').trim(); if (!t) return '';
+    const last = t.split(',').pop().trim().replace(/\s+\d{5}(-\d{4})?$/, '');
+    if (WS_STATE_ABBR[last.toUpperCase()]) return WS_STATE_ABBR[last.toUpperCase()];
+    const word = last.split(/\s+/).pop();
+    if (/^[A-Z]{2}$/.test(word) && WS_STATE_ABBR[word]) return WS_STATE_ABBR[word];
+    const names = Object.values(WS_STATE_ABBR).sort((a, b) => b.length - a.length);
+    const low = t.toLowerCase();
+    return names.find(n => low.endsWith(n.toLowerCase())) || names.find(n => low.includes(n.toLowerCase())) || '';
+  }
+
   function printReport() {
     const name = document.getElementById('bizName').value.trim() || 'Business Audit';
     const location = document.getElementById('bizLocation').value.trim();
+    const reportState = wsStateFromText(location) || (document.getElementById('licenseState') ? document.getElementById('licenseState').value : '');
     const profileHTML = document.getElementById('profileGrid').innerHTML || '<p>No business profile looked up yet.</p>';
     const linkGrid = document.getElementById('linkGrid');
     const linksHTML = linkGrid && linkGrid.innerHTML
@@ -1237,6 +1269,10 @@ ${notes || '(none)'}
   <h2>Website Technical Audit</h2>
   ${scoresHTML ? `<div class="pr-scores">${scoresHTML}</div>` : ''}
   ${flagsHTML}
+
+  <h2>Compliance Reference Links${reportState ? ' for ' + reportState : ''}</h2>
+  <p style="font-size:.85rem;color:#555;">Click any link to read the rules and penalties for yourself.</p>
+  <ul>${wsComplianceLinksHTML(reportState)}</ul>
 
   <h2>Notes</h2>
   <div class="pr-notes">${notes ? notes.replace(/</g,'&lt;') : '(none)'}</div>
